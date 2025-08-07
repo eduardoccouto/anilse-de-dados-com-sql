@@ -210,4 +210,138 @@ from sales.products
 group by brand
 having count(*) > 10
 
+-- JOINS #######################
 
+select * from temp_tables.tabela_1;
+
+select * from temp_tables.tabela_2;
+
+--left join
+select t1.cpf, t1.name, t2.state
+from temp_tables.tabela_1 as t1
+left join temp_tables.tabela_2 as t2
+on t1.cpf = t2.cpf;
+
+--inner join
+select t1.cpf, t1.name, t2.state
+from temp_tables.tabela_1 as t1
+inner join temp_tables.tabela_2 as t2
+on t1.cpf = t2.cpf;
+
+--right join
+
+select t1.cpf, t1.name, t2.state
+from temp_tables.tabela_1 as t1
+right join temp_tables.tabela_2 as t2
+on t1.cpf = t2.cpf;
+
+-- EXERCÍCIOS ########################################################################
+
+-- (Exercício 1) Identifique quais as marcas de veículo mais visitada na tabela sales.funnel
+
+select 
+	pro.brand,
+	count(*) as visitas
+
+from sales.funnel as fun
+left join sales.products as pro
+	on fun.product_id = pro.product_id
+group by pro.brand
+order by visitas desc
+
+
+-- (Exercício 2) Identifique quais as lojas de veículo mais visitadas na tabela sales.funnel
+
+select 
+	sto.store_name,
+	count(*) as visitas
+
+from sales.funnel as fun
+left join sales.stores as sto
+	on fun.store_id = sto.store_id
+group by sto.store_name
+order by visitas desc
+
+
+
+-- (Exercício 3) Identifique quantos clientes moram em cada tamanho de cidade (o porte da cidade
+-- consta na coluna "size" da tabela temp_tables.regions)
+
+select
+	reg.size,
+	count(*) as contagem
+from sales.customers as cus
+left join temp_tables.regions as reg
+	on lower(cus.city) = lower(reg.city)
+	and lower(cus.state) = lower(reg.state)
+group by reg.size
+order by contagem;
+
+-- UNION ###################################
+
+--união simmples de duas tabelas 
+select * from sales.products
+union all
+select * from temp_tables.products_2;
+
+
+--subquery ################################
+
+--ex 1: SubQuery no WHERE
+--Informar o veóculo mais barato da tabela products
+select *
+from 
+	sales.products
+where price = (select min(price) from sales.products); --nao funciona se a subquery retornar mais de 1 valor
+
+--ex 2: SubQuery com With
+--calcular a idade media dos clientes por status profissional
+
+with age_by_customer as(
+select 
+	(current_date - birth_date)/365 as age,
+	professional_status	from sales.customers
+	)
+select avg(age) as media, professional_status
+from age_by_customer
+group by professional_status;
+
+
+--ex3: SuqQuery no from (menos legível)
+select avg(age) as media, professional_status
+from (
+	select 
+		(current_date - birth_date)/365 as age,
+		professional_status	
+		from sales.customers
+) as idades
+group by professional_status;
+
+
+--ex 4: SubQuery no SELECT
+--Na tabela sales.funnel, crie uma coluna que informe o nº de visitas acumuladas que a loja visitada recebeu
+
+
+
+
+
+
+
+
+select
+	fun.visit_id,
+	sto.store_name,
+	fun.visit_page_date,
+	(
+		select count(*)
+		from sales.funnel as fun2
+		where fun2.visit_page_date <= fun.visit_page_date
+			and fun2.store_id = fun.store_id
+	) as visitas_acumuladas
+from sales.funnel as fun
+left join
+	sales.stores as sto
+on
+	fun.store_id = sto.store_id
+order by sto.store_name, fun.visit_page_date
+limit 10;
