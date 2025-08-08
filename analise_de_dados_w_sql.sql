@@ -322,12 +322,6 @@ group by professional_status;
 --Na tabela sales.funnel, crie uma coluna que informe o nº de visitas acumuladas que a loja visitada recebeu
 
 
-
-
-
-
-
-
 select
 	fun.visit_id,
 	sto.store_name,
@@ -345,3 +339,78 @@ on
 	fun.store_id = sto.store_id
 order by sto.store_name, fun.visit_page_date
 limit 10;
+
+
+--ex 2:
+with preco_medio_produto as (
+	select  avg(price) as average, brand
+	from sales.products
+	group by brand )
+select
+	fun.visit_id,
+	fun.visit_page_date, pro.brand,
+	medio.average, (pro.price * (1 + fun.discount)) as preco_final,
+	((pro.price * (1 + fun.discount)) - medio.average) as diferenca
+from sales.funnel as fun
+left join sales.products as pro
+	on fun.product_id = pro.product_id
+left join preco_medio_produto as medio
+	on medio.brand = pro.brand
+
+select * from sales.funnel limit 2;
+
+
+-- EXERCÍCIOS ########################################################################
+
+-- (Exercício 1) Crie uma coluna calculada com o número de visitas realizadas por cada
+-- cliente da tabela sales.customers
+
+select * from sales.customers limit 2;
+select * from sales.funnel limit 2;
+
+with visitas as (
+	select count(*) as visitNumber, 
+	customer_id 
+	from sales.funnel 
+	group by customer_id
+)
+select cus.*, vis.visitNumber
+from sales.customers as cus
+left join visitas as vis
+on cus.customer_id  = vis.customer_id
+order by vis.visitNumber;
+
+
+--TRATAMENTO DE DADOS
+--Transformação de tipos
+select   '2022-08-08'::date  - '2004-02-18'::date;
+
+select '100'::numeric - '10'::numeric;
+
+select replace(11121::text,'1','A')
+
+select cast('2021-10-01'as date) - cast('2021-02-01' as date);
+
+--Tratamento geral
+--CASE WHEN
+
+with faixa_de_renda as(
+
+	select 
+		income, 
+		case
+			when income < 5000 then '0 - 5000'
+			when income >= 5000 and income <10000 then '5000 - 10000'
+			when income >= 10000 and income <15000 then '10000 - 15000'
+			else '15000 +'
+			end as faixa_renda
+	from sales.customers
+) 
+select 
+	faixa_renda, count(*) as total
+from faixa_de_renda
+group by faixa_renda
+order by total;
+
+
+
