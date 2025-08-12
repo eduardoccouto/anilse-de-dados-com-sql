@@ -405,12 +405,55 @@ with faixa_de_renda as(
 			else '15000 +'
 			end as faixa_renda
 	from sales.customers
-) 
-select 
+)select 
 	faixa_renda, count(*) as total
 from faixa_de_renda
 group by faixa_renda
 order by total;
 
+SELECT * FROM sales.customers limit 10;
+--COALESCE(varifica qual o primeiro campo nao nulo)
+select * from temp_tables.regions limit 10;
+--**USANDO CASE WHEN
+select *,
+	case
+		when population is not null then population
+		else (select avg(population) from temp_tables.regions)
+		end as populacao_ajustada
+from temp_tables.regions;
+--opção 2
+select *,
+	coalesce(population, (select avg(population) from temp_tables.regions)) as populacao_ajustada
+from temp_tables.regions;
 
+--Tratamento de texto 
 
+select lower('São paulo' ) = 'são paulo';
+
+select upper('São paulo') = 'SÃO PAULO';
+
+SELECT trim('eduardo da costa couto     ') = 'eduardo da costa couto';
+
+select replace('SAO PAULO', 'SAO', 'SÃO') = 'SÃO PAULO';
+
+--Tratamento de datas
+--ex1
+select (current_date +  interval '10 weeks')::date;
+
+select (current_date + interval '10 hours')
+
+select current_date + interval '10hours';
+
+--ex2
+
+select * from sales.funnel;
+select visit_page_date, count(*)
+from sales.funnel
+group by visit_page_date;
+
+select
+	count(*) as visitas,
+	date_trunc('month',  visit_page_date)::date as month
+from sales.funnel
+group by month
+order by month desc;
