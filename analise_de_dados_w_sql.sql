@@ -457,3 +457,186 @@ select
 from sales.funnel
 group by month
 order by month desc;
+
+--ex3
+--extração de unidades de uma data
+--dia da semana que mais rebe visitar no site
+
+
+select 
+	extract('dow' from visit_page_date) as "dia da semana", --dow = day of week
+	count(*) as visitas
+from sales.funnel
+group by "dia da semana"
+order by visitas desc;
+
+select (CURRENT_DATE - '01-06-2018')/7; --diferenca em semanas
+select (CURRENT_DATE - '01-06-2018')/30; --diferenca em semanas
+select (CURRENT_DATE - '01-06-2018')/365; --diferenca em semanas
+
+
+
+select datediff('weeks', '01-06-2018', current_date)
+
+
+create Function datediff(unidade varchar, data_inicial date, data_final date)
+returns INTEGER
+LANGUAGE SQL
+AS
+$$
+	SELECT
+		CASE 
+			WHEN unidade in ('d', 'day', 'days') THEN (data_final - data_inicial) 
+			WHEN unidade in ('w', 'week', 'weeks') THEN (data_final - data_inicial)/7 
+			WHEN unidade in ('m', 'month', 'months') THEN (data_final - data_inicial)/30 
+			WHEN unidade in ('y', 'year', 'years') THEN (data_final - data_inicial)/365 
+		END as diferenca
+$$
+
+drop Function datediff;
+
+
+-------MANIPULÇÃO DE TABELAS
+SELECT
+	customer_id,
+	datediff('y', birth_date, CURRENT_DATE) as idade_cliente
+	into temp_tables.customers_age -- cria uma tabela
+from sales.customers
+
+select * from temp_tables.customers_age
+
+--ex2: 
+select DISTINCT professional_status
+from sales.customers
+
+create table temp_tables.profissoes(
+	professional_status VARCHAR,
+	status_profissional VARCHAR
+);
+
+select * from temp_tables.profissoes;
+
+insert into temp_tables.profissoes
+(professional_status, status_profissional)
+VALUES
+(
+	'freelancer', 'faz bicos'			
+),
+(
+	'retired', 'aposentado'
+),
+(
+	'clt', 'clt'
+)
+
+--deletar tabelas
+
+drop table temp_tables.profissoes;
+
+INSERT INTO temp_tables.profissoes
+(professional_status, status_profissional)
+VALUES
+('trainee', 'estagiário');
+
+update temp_tables.profissoes
+set professional_status = 'intern'
+WHERE professional_status = 'trainee';
+
+DELETE FROM temp_tables.profissoes
+where professional_status = 'clt';
+
+--inserção de colunas
+ALTER TABLE sales.customers
+add customer_age int;
+
+update sales.customers
+set customer_age = datediff('y', birth_date, current_date)
+where true
+
+select * from sales.customers
+limit 5;
+
+--alter ot ipo de uma coluna
+
+alter Table sales.customers
+alter COLUMN customer_Age type VARCHAR;
+
+
+-- alterar o nome da coluna
+
+alter table sales.customers
+reNAME column customer_age to age
+
+alter table sales.customers
+drop COLUMN age;
+
+
+--leads
+
+select * from sales.funnel limit 5;
+
+select date_trunc('month', visit_page_date)::date as month_,
+count(*) as leads
+from sales.funnel 
+group by month_
+order by month_; 
+
+
+--Pagamentos, receita, mÊs
+select 
+	date_trunc('month', fun.paid_date)::date as month_,
+	count(fun.paid_date) as payments,
+	sum(pro.price * (1 + fun.discount))
+from 
+	sales.funnel fun
+left join 
+	sales.products pro
+on 
+	pro.product_id = fun.product_id
+WHERE	
+	fun.paid_date is not NULL
+group by 
+	month_
+order by 
+	month_; 
+
+
+--conversão
+with 
+leads as (
+	select 
+		date_trunc('month', visit_page_date)::date as month_,
+	count(*) as leads
+	from 
+		sales.funnel 
+	group by 
+		month_
+	order by 
+		month_
+),
+payments_ as (
+	select 
+		date_trunc('month', fun.paid_date)::date as month_,
+		count(fun.paid_date) as payments,
+		sum(pro.price * (1 + fun.discount)) as receita
+	from 
+		sales.funnel fun
+	left join 
+		sales.products pro
+	on 
+		pro.product_id = fun.product_id
+	WHERE	
+		fun.paid_date is not NULL
+	group by 
+		month_
+	order by 
+		month_
+)
+select
+	l.month_, l.leads, p.payments,
+	(p.receita/p.payments) as ticket_medio
+from leads l 
+left join payments_ p
+on p.month_ = l.month_;
+
+
