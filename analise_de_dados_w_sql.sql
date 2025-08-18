@@ -706,6 +706,8 @@ with visit_semana as (select
 	extract('dow' from visit_page_date) as dia_semana,
 	count(visit_page_date) as visitas
 from sales.funnel
+where
+	visit_page_date between '2021-08-01' and '2021-08-31'
 group by
 	dia_semana)
 select
