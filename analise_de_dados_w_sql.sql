@@ -617,7 +617,7 @@ leads as (
 payments_ as (
 	select 
 		date_trunc('month', fun.paid_date)::date as month_,
-		count(fun.paid_date) as payments,
+		count(*) as payments,
 		sum(pro.price * (1 + fun.discount)) as receita
 	from 
 		sales.funnel fun
@@ -633,10 +633,95 @@ payments_ as (
 		month_
 )
 select
-	l.month_, l.leads, p.payments,
-	(p.receita/p.payments) as ticket_medio
+	l.month_ as "mês", l.leads, p.payments as "Qnt. Pagamentos", (p.receita/1000) as "Receita",
+	(p.receita/p.payments/1000)  as "Ticket Médio",
+	(p.payments::float / l.leads::float) as "Conversão (%)"
 from leads l 
 left join payments_ p
 on p.month_ = l.month_;
+
+------------------------------------------------------
+
+select * from temp_tables.regions limit 5;
+
+select * from sales.funnel limit 5;
+
+select * from sales.customers limit 5;
+
+
+select 	
+		'Brazil' as Pais,
+		cus.state as Estado,				
+		count(fun.paid_date) as Vendas			
+	from 					
+		sales.funnel fun							
+	left join					
+		sales.customers cus				
+	on 					
+		cus.customer_id = fun.customer_id				
+	WHERE					
+		fun.paid_date between '2021-08-01' and '2021-08-31'				
+	group by 					
+		Estado				
+	order by Vendas desc;		
+
+
+
+
+select * from sales.products limit 5;
+
+
+
+select
+	count(fun.paid_date) as "Vendas",
+	pro.brand as "Marca"
+from sales.funnel as fun 
+left join sales.products as pro
+on fun.product_id = pro.product_id
+where 
+	fun.paid_date between '2021-08-01' and '2021-08-31'
+group by pro.brand
+order by "Vendas" desc
+limit 5;
+
+
+select
+	count(fun.paid_date) as "Vendas",
+	sto.store_name as "Loja"
+from sales.funnel as fun 
+left join sales.stores as sto
+on fun.store_id = sto.store_id
+where 
+	fun.paid_date between '2021-08-01' and '2021-08-31'
+group by "Loja"
+order by "Vendas" desc
+limit 5;
+
+select * from sales.stores limit 5;
+
+
+
+
+with visit_semana as (select
+	extract('dow' from visit_page_date) as dia_semana,
+	count(visit_page_date) as visitas
+from sales.funnel
+group by
+	dia_semana)
+select
+	visitas,
+	case 
+		when dia_semana = 0 then 'Domingo'
+		when dia_semana = 1 then 'Segunda'
+		when dia_semana = 2 then 'Terça'
+		when dia_semana = 3 then 'Quarta'
+		when dia_semana = 4 then 'Quinta'
+		when dia_semana = 5 then 'Sexta'
+		when dia_semana = 6 then 'Sabado'
+	end as dia_da_semana
+from visit_semana
+order by dia_semana
+;
+
 
 
